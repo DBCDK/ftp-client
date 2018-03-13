@@ -22,12 +22,18 @@ import java.nio.file.Path;
  */
 public class FtpClient {
     private String host;
+    private Integer port;
     private String username;
     private String password;
     private FTPClient session;
 
     public FtpClient withHost(String host) {
         this.host = host;
+        return this;
+    }
+
+    public FtpClient withPort(Integer port) {
+        this.port = port;
         return this;
     }
 
@@ -53,7 +59,11 @@ public class FtpClient {
         }
         session = new FTPClient();
         try {
-            session.connect(host);
+            if (port != null) {
+                session.connect(host, port);
+            } else {
+                session.connect(host);
+            }
             checkReplyCode();
             session.enterLocalPassiveMode();
             session.setFileType(FTP.BINARY_FILE_TYPE);
