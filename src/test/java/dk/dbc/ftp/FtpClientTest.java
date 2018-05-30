@@ -16,13 +16,18 @@ import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class FtpClientTest {
     private static final String USERNAME = "FtpClientTest";
@@ -122,6 +127,69 @@ class FtpClientTest {
 
         assertThat(getRemoteFileContent(pathJoin(HOME_DIR, PUT_DIR, filename)),
                 is(fileContent));
+    }
+
+    @Test
+    void get() throws IOException {
+        final String[] putFiles = new String[] {
+            "src/test/resources/put_file.txt",
+            "src/test/resources/put_another_file.txt"};
+        final FtpClient ftpClient = new FtpClient()
+            .withHost("localhost")
+            .withPort(fakeFtpServer.getServerControlPort())
+            .withUsername(USERNAME)
+            .withPassword(PASSWORD)
+            .cd(PUT_DIR);
+        for(String path : putFiles) {
+            ftpClient.put(Paths.get(path));
+        }
+
+        ArrayList<InputStream> inputStreamList = new ArrayList<>();
+        inputStreamList.add(ftpClient.get("put_file.txt"));
+        inputStreamList.add(ftpClient.get("put_another_file.txt"));
+
+        assertThat("inputstream 1 isn't null", inputStreamList.get(0),
+            is(notNullValue()));
+        assertThat("inputstream 2 isn't null", inputStreamList.get(1),
+            is(notNullValue()));
+        assertThat("read inputstream 1", readInputString(
+            inputStreamList.get(0)), is("testing put file"));
+        assertThat("read inputstream 2", readInputString(
+            inputStreamList.get(1)), is(
+            "\"I wumbo, you wumbo, he-she-me wumbo.\n" +
+            "Wumboing, wumbology, the study of wumbo!\n" +
+            "It’s first grade Spongebob\""));
+
+        ftpClient.close();
+    }
+
+    @Test
+    void get_noFileFound() {
+        final FtpClient ftpClient = new FtpClient()
+            .withHost("localhost")
+            .withPort(fakeFtpServer.getServerControlPort())
+            .withUsername(USERNAME)
+            .withPassword(PASSWORD)
+            .cd(PUT_DIR);
+        try {
+            ftpClient.get("does_not_exist.txt");
+            fail("expected ftpclient exception");
+        } catch(FtpClientException e) {}
+        finally {
+            ftpClient.close();
+        }
+    }
+
+    private static String readInputString(InputStream is) throws IOException {
+        try(final BufferedReader in = new BufferedReader(
+                new InputStreamReader(is))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while((line = in.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            return sb.toString().trim();
+        }
     }
 
     private static String getRemoteFileContent(String remoteFilePath) {
