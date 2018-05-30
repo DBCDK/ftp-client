@@ -179,6 +179,27 @@ public class FtpClient {
         return this;
     }
 
+    /**
+     * Retrieves an inputstream from which the given file can be read
+     * @param remote file to retrieve
+     * @return inputstream
+     */
+    public InputStream get(String remote) {
+        if(!isConnected()) {
+            connect();
+        }
+        try {
+            final InputStream is = session.retrieveFileStream(remote);
+            if(!FTPReply.isPositivePreliminary(session.getReplyCode())) {
+                throw new FtpClientException(session.getReplyString());
+            }
+            session.completePendingCommand();
+            return is;
+        } catch(IOException e) {
+            throw new FtpClientException(e);
+        }
+    }
+
     private boolean isConnected() {
         return session != null && session.isConnected();
     }
