@@ -8,6 +8,7 @@ package dk.dbc.ftp;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockftpserver.fake.FakeFtpServer;
 import org.mockftpserver.fake.UserAccount;
@@ -23,6 +24,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -49,6 +51,14 @@ class FtpClientTest {
         fakeFtpServer.setFileSystem(fileSystem);
 
         fakeFtpServer.start();
+    }
+
+    @BeforeEach
+    void resetFileSystem() {
+        final FileSystem fileSystem = new UnixFakeFileSystem();
+        fileSystem.add(new DirectoryEntry(HOME_DIR));
+        fileSystem.add(new DirectoryEntry(pathJoin(HOME_DIR, PUT_DIR)));
+        fakeFtpServer.setFileSystem(fileSystem);
     }
     
     @AfterAll
@@ -178,6 +188,92 @@ class FtpClientTest {
         finally {
             ftpClient.close();
         }
+    }
+
+    @Test
+    void list_currentDirectory() {
+        final String[] putFiles = new String[] {
+            "src/test/resources/put_file.txt",
+            "src/test/resources/put_another_file.txt"};
+        final FtpClient ftpClient = new FtpClient()
+            .withHost("localhost")
+            .withPort(fakeFtpServer.getServerControlPort())
+            .withUsername(USERNAME)
+            .withPassword(PASSWORD)
+            .cd(PUT_DIR);
+        for(String path : putFiles) {
+            ftpClient.put(Paths.get(path));
+        }
+
+        List<String> filenames = ftpClient.list();
+        assertThat("list size", filenames.size(), is(2));
+        assertThat("filename 1", filenames.get(0), is("put_another_file.txt"));
+        assertThat("filename 2", filenames.get(1), is("put_file.txt"));
+    }
+
+    @Test
+    void list_filteredCurrentDirectory() {
+        final String[] putFiles = new String[] {
+            "src/test/resources/put_file.txt",
+            "src/test/resources/put_another_file.txt"};
+        final FtpClient ftpClient = new FtpClient()
+            .withHost("localhost")
+            .withPort(fakeFtpServer.getServerControlPort())
+            .withUsername(USERNAME)
+            .withPassword(PASSWORD)
+            .cd(PUT_DIR);
+        for(String path : putFiles) {
+            ftpClient.put(Paths.get(path));
+        }
+
+        List<String> filenames = ftpClient.list(
+            file -> file != null && file.getName().contains("another"));
+        assertThat("list size", filenames.size(), is(1));
+        assertThat("filename", filenames.get(0), is("put_another_file.txt"));
+    }
+
+    @Test
+    void list_filtered() {
+        final String[] putFiles = new String[] {
+            "src/test/resources/put_file.txt",
+            "src/test/resources/put_another_file.txt"};
+        final FtpClient ftpClient = new FtpClient()
+            .withHost("localhost")
+            .withPort(fakeFtpServer.getServerControlPort())
+            .withUsername(USERNAME)
+            .withPassword(PASSWORD)
+            .cd(PUT_DIR);
+        for(String path : putFiles) {
+            ftpClient.put(Paths.get(path));
+        }
+        ftpClient.cd(HOME_DIR);
+
+        List<String> filenames = ftpClient.list(PUT_DIR,
+            file -> file != null && file.getName().contains("another"));
+        assertThat("list size", filenames.size(), is(1));
+        assertThat("filename", filenames.get(0), is("put_another_file.txt"));
+    }
+
+    @Test
+    void list() {
+        final String[] putFiles = new String[] {
+            "src/test/resources/put_file.txt",
+            "src/test/resources/put_another_file.txt"};
+        final FtpClient ftpClient = new FtpClient()
+            .withHost("localhost")
+            .withPort(fakeFtpServer.getServerControlPort())
+            .withUsername(USERNAME)
+            .withPassword(PASSWORD)
+            .cd(PUT_DIR);
+        for(String path : putFiles) {
+            ftpClient.put(Paths.get(path));
+        }
+        ftpClient.cd(HOME_DIR);
+
+        List<String> filenames = ftpClient.list(PUT_DIR);
+        assertThat("list size", filenames.size(), is(2));
+        assertThat("filename 1", filenames.get(0), is("put_another_file.txt"));
+        assertThat("filename 2", filenames.get(1), is("put_file.txt"));
     }
 
     private static String readInputString(InputStream is) throws IOException {

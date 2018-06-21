@@ -7,6 +7,8 @@ package dk.dbc.ftp;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPFileFilter;
 import org.apache.commons.net.ftp.FTPReply;
 
 import java.io.ByteArrayInputStream;
@@ -15,6 +17,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This utility class provides convenience methods for executing FTP commands.
@@ -198,6 +202,56 @@ public class FtpClient {
         } catch(IOException e) {
             throw new FtpClientException(e);
         }
+    }
+
+    /**
+     * list files in a directory
+     * @param directory directory to list files in
+     * @param fileFilter filter on filenames
+     * @return list of filenames
+     */
+    public List<String> list(String directory, FTPFileFilter fileFilter) {
+        if(!isConnected()) {
+            connect();
+        }
+        try {
+            List<String> filenames = new ArrayList<>();
+            // use listFiles instead of listNames to get filtering in the client
+            for (FTPFile file : session.listFiles(directory, fileFilter)) {
+                if(file != null) {
+                    filenames.add(file.getName());
+                }
+            }
+            return filenames;
+        } catch(IOException e) {
+            throw new FtpClientException(e);
+        }
+    }
+
+    /**
+     * list files in a directory
+     * @param directory directory to list files in
+     * @return list of filenames
+     */
+    public List<String> list(String directory) {
+        return list(directory, file -> true);
+    }
+
+    /**
+     * list files in the current directory
+     * @param fileFilter filter on filenames
+     * @return list of filenames
+     */
+    public List<String> list(FTPFileFilter fileFilter) {
+        return list(null, fileFilter);
+    }
+
+    /**
+     * list files in the current directory
+     * @return list of filenames
+     */
+    public List<String> list() {
+        return list(null, file -> true);
     }
 
     private boolean isConnected() {
