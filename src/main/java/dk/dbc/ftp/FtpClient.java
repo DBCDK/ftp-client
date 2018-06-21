@@ -5,6 +5,7 @@
 
 package dk.dbc.ftp;
 
+import dk.dbc.invariant.InvariantUtil;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -165,6 +166,7 @@ public class FtpClient {
      * @return this client
      */
     public FtpClient put(String remote, InputStream inputStream) {
+        InvariantUtil.checkNotNullNotEmptyOrThrow(remote, "remote");
         if (!isConnected()) {
             connect();
         }

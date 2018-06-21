@@ -29,6 +29,7 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class FtpClientTest {
@@ -137,6 +138,40 @@ class FtpClientTest {
 
         assertThat(getRemoteFileContent(pathJoin(HOME_DIR, PUT_DIR, filename)),
                 is(fileContent));
+    }
+
+    @Test
+    void putStringRemoteNull() {
+        final String filename = null;
+        final String fileContent = "testing put string";
+
+        assertThrows(NullPointerException.class, () -> {
+            new FtpClient()
+                .withHost("localhost")
+                .withPort(fakeFtpServer.getServerControlPort())
+                .withUsername(USERNAME)
+                .withPassword(PASSWORD)
+                .cd(PUT_DIR)
+                .put(filename, fileContent)
+                .close();
+        });
+    }
+
+    @Test
+    void putStringRemoteEmpty() {
+        final String filename = "";
+        final String fileContent = "testing put string";
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            new FtpClient()
+                .withHost("localhost")
+                .withPort(fakeFtpServer.getServerControlPort())
+                .withUsername(USERNAME)
+                .withPassword(PASSWORD)
+                .cd(PUT_DIR)
+                .put(filename, fileContent)
+                .close();
+        });
     }
 
     @Test
