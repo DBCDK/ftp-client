@@ -15,6 +15,7 @@ import org.apache.commons.net.ftp.FTPReply;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ public class FtpClient {
     private String username;
     private String password;
     private FTPClient session;
+    private Proxy proxy = Proxy.NO_PROXY;
 
     public FtpClient withHost(String host) {
         this.host = host;
@@ -54,6 +56,12 @@ public class FtpClient {
         return this;
     }
 
+    public FtpClient withProxy(Proxy proxy) {
+        close();
+        this.proxy = proxy;
+        return this;
+    }
+
     /**
      * Opens connection to ftp server specified through withHost method
      * @return this client
@@ -63,6 +71,7 @@ public class FtpClient {
             close();
         }
         session = new FTPClient();
+        session.setProxy(proxy);
         try {
             if (port != null) {
                 session.connect(host, port);
