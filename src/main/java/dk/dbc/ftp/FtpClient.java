@@ -13,6 +13,7 @@ import org.apache.commons.net.ftp.FTPFileFilter;
 import org.apache.commons.net.ftp.FTPReply;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Proxy;
@@ -245,12 +246,13 @@ public class FtpClient {
                 throw new FtpClientException(String.format(
                     "error setting file type to %s", fileType));
             }
-            final InputStream is = session.retrieveFileStream(remote);
-            if(!FTPReply.isPositivePreliminary(session.getReplyCode())) {
+            final ByteArrayOutputStream outputStream =
+                new ByteArrayOutputStream();
+            session.retrieveFile(remote, outputStream);
+            if(!FTPReply.isPositiveCompletion(session.getReplyCode())) {
                 throw new FtpClientException(session.getReplyString());
             }
-            session.completePendingCommand();
-            return is;
+            return new ByteArrayInputStream(outputStream.toByteArray());
         } catch(IOException e) {
             throw new FtpClientException(e);
         }

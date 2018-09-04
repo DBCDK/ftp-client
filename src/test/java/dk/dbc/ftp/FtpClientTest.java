@@ -18,6 +18,8 @@ import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -206,6 +209,40 @@ class FtpClientTest {
             "It’s first grade Spongebob\""));
 
         ftpClient.close();
+    }
+
+    @Test
+    void get_largeFile() throws IOException {
+        /* this test ensures that the ftp client works with "large" files.
+         * the retrieveFileStream method from the apache ftp client doesn't
+         * seem to work with files larger than a few megabytes.
+         */
+        final int fileSize = 8388608; // eight megabytes
+        final byte[] randomBytes = new byte[fileSize];
+        new Random().nextBytes(randomBytes);
+        final ByteArrayInputStream is = new ByteArrayInputStream(randomBytes);
+        final FtpClient ftpClient = new FtpClient()
+            .withHost("localhost")
+            .withPort(fakeFtpServer.getServerControlPort())
+            .withUsername(USERNAME)
+            .withPassword(PASSWORD)
+            .cd(PUT_DIR);
+        ftpClient.put("musclebob_buffpants.gif", is, FtpClient.FileType.BINARY);
+
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final InputStream inputStream = ftpClient.get(
+            "musclebob_buffpants.gif", FtpClient.FileType.BINARY);
+        final byte[] buffer = new byte[1024];
+        int read;
+        while((read = inputStream.read(buffer, 0, buffer.length)) != -1) {
+            outputStream.write(buffer, 0, read);
+        }
+        outputStream.flush();
+        byte[] output = outputStream.toByteArray();
+
+        ftpClient.close();
+
+        assertThat(output, is(randomBytes));
     }
 
     @Test
