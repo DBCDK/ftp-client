@@ -13,6 +13,7 @@ import org.apache.commons.net.ftp.FTPFileFilter;
 import org.apache.commons.net.ftp.FTPReply;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Proxy;
@@ -33,6 +34,16 @@ public class FtpClient {
     private String password;
     private FTPClient session;
     private Proxy proxy = Proxy.NO_PROXY;
+
+    public enum FileType {
+        ASCII(FTP.ASCII_FILE_TYPE),
+        BINARY(FTP.BINARY_FILE_TYPE);
+
+        private final int value;
+        FileType(int value) {
+            this.value = value;
+        }
+    }
 
     public FtpClient withHost(String host) {
         this.host = host;
@@ -175,11 +186,28 @@ public class FtpClient {
      * @return this client
      */
     public FtpClient put(String remote, InputStream inputStream) {
+        return put(remote, inputStream, FileType.ASCII);
+    }
+
+    /**
+     * Stores input from the given InputStream {@code inputStream}
+     * as file on the server using name {@code remote}. This method
+     * closes the given InputStream.
+     * @param remote name of remote file
+     * @param inputStream local InputStream from which to read content
+     * @param fileType type of file to be sent
+     * @return this client
+     */
+    public FtpClient put(String remote, InputStream inputStream, FileType fileType) {
         InvariantUtil.checkNotNullNotEmptyOrThrow(remote, "remote");
         if (!isConnected()) {
             connect();
         }
         try {
+            if(!session.setFileType(fileType.value)) {
+                throw new FtpClientException(String.format(
+                    "error setting file type to %s", fileType));
+            }
             session.storeFile(remote, inputStream);
             checkReplyCode();
         } catch (IOException e) {
@@ -200,16 +228,31 @@ public class FtpClient {
      * @return inputstream
      */
     public InputStream get(String remote) {
+        return get(remote, FileType.ASCII);
+    }
+
+    /**
+     * Retrieves an inputstream from which the given file can be read
+     * @param remote file to retrieve
+     * @param fileType type of file to retrieve
+     * @return inputstream
+     */
+    public InputStream get(String remote, FileType fileType) {
         if(!isConnected()) {
             connect();
         }
         try {
-            final InputStream is = session.retrieveFileStream(remote);
-            if(!FTPReply.isPositivePreliminary(session.getReplyCode())) {
+            if(!session.setFileType(fileType.value)) {
+                throw new FtpClientException(String.format(
+                    "error setting file type to %s", fileType));
+            }
+            final ByteArrayOutputStream outputStream =
+                new ByteArrayOutputStream();
+            session.retrieveFile(remote, outputStream);
+            if(!FTPReply.isPositiveCompletion(session.getReplyCode())) {
                 throw new FtpClientException(session.getReplyString());
             }
-            session.completePendingCommand();
-            return is;
+            return new ByteArrayInputStream(outputStream.toByteArray());
         } catch(IOException e) {
             throw new FtpClientException(e);
         }
