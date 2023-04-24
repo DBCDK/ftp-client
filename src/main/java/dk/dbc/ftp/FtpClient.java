@@ -308,6 +308,24 @@ public class FtpClient {
         return list(null, file -> true);
     }
 
+    public List<FTPFile> ls() {
+        if (!isConnected()) {
+            connect();
+        }
+        try {
+            List<FTPFile> files = new ArrayList<>();
+            // use listFiles instead of listNames to get filtering in the client
+            for (FTPFile file : session.listFiles(null, file -> true)) {
+                if (file != null) {
+                    files.add(file);
+                }
+            }
+            return files;
+        } catch (IOException e) {
+            throw new FtpClientException(e);
+        }
+    }
+
     private boolean isConnected() {
         return session != null && session.isConnected();
     }
