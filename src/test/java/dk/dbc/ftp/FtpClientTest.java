@@ -6,6 +6,7 @@
 package dk.dbc.ftp;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.net.ftp.FTPFile;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +26,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
@@ -264,6 +267,7 @@ class FtpClientTest {
 
     @Test
     void list_currentDirectory() {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
         final String[] putFiles = new String[] {
             "src/test/resources/put_file.txt",
             "src/test/resources/put_another_file.txt"};
@@ -277,10 +281,14 @@ class FtpClientTest {
             ftpClient.put(Paths.get(path));
         }
 
-        List<String> filenames = ftpClient.list();
+        List<FTPFile> filenames = ftpClient.ls();
         assertThat("list size", filenames.size(), is(2));
-        assertThat("filename 1", filenames.get(0), is("put_another_file.txt"));
-        assertThat("filename 2", filenames.get(1), is("put_file.txt"));
+        assertThat("filename 1", filenames.get(0).getName(), is("put_another_file.txt"));
+        assertThat("filename 2", filenames.get(1).getName(), is("put_file.txt"));
+        assertThat("filesize 1", filenames.get(0).getSize(), is(112L));
+        assertThat("filesize 2", filenames.get(1).getSize(), is(16L));
+        assertThat("date 1", format.format(filenames.get(0).getTimestamp().getTime()), is(format.format(new Date())));
+        assertThat("date 2", format.format(filenames.get(1).getTimestamp().getTime()), is(format.format(new Date())));
     }
 
     @Test
