@@ -1,11 +1,5 @@
-/*
- * Copyright Dansk Bibliotekscenter a/s. Licensed under GPLv3
- * See license text in LICENSE.txt
- */
-
 package dk.dbc.ftp;
 
-import dk.dbc.invariant.InvariantUtil;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -199,7 +193,12 @@ public class FtpClient {
      * @return this client
      */
     public FtpClient put(String remote, InputStream inputStream, FileType fileType) {
-        InvariantUtil.checkNotNullNotEmptyOrThrow(remote, "remote");
+        if (remote == null) {
+            throw new NullPointerException("Parameter 'remote' in FtpClient(...) must not be null or empty");
+        }
+        if (remote.isEmpty()) {
+            throw new IllegalArgumentException("Parameter 'remote' in FtpClient(...) must not be null or empty");
+        }
         if (!isConnected()) {
             connect();
         }

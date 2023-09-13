@@ -1,8 +1,3 @@
-/*
- * Copyright Dansk Bibliotekscenter a/s. Licensed under GPLv3
- * See license text in LICENSE.txt
- */
-
 package dk.dbc.ftp;
 
 public class FtpClientException extends RuntimeException {
