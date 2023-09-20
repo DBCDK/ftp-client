@@ -5,7 +5,6 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPFileFilter;
 import org.apache.commons.net.ftp.FTPReply;
-import org.apache.commons.net.io.CopyStreamException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
