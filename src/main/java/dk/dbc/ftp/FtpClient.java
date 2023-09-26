@@ -222,6 +222,44 @@ public class FtpClient {
     }
 
     /**
+     * Append input from the given InputStream {@code inputStream}
+     * as file on the server using name {@code remote}. This method
+     * closes the given InputStream.
+     * @param remote name of remote file
+     * @param inputStream local InputStream from which to read content
+     * @param fileType type of file to be sent
+     * @return this client
+     */
+    public FtpClient append(String remote, InputStream inputStream, FileType fileType) {
+        if (remote == null) {
+            throw new NullPointerException("Parameter 'remote' in FtpClient(...) must not be null or empty");
+        }
+        if (remote.isEmpty()) {
+            throw new IllegalArgumentException("Parameter 'remote' in FtpClient(...) must not be null or empty");
+        }
+        if (!isConnected()) {
+            connect();
+        }
+        try {
+            if (!session.setFileType(fileType.value)) {
+                throw new FtpClientException(String.format(
+                        "error setting file type to %s", fileType));
+            }
+            session.appendFile(remote, inputStream);
+            checkReplyCode();
+        } catch (IOException e) {
+            throw new FtpClientException(e);
+        } finally {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                throw new FtpClientException(e);
+            }
+        }
+        return this;
+    }
+
+    /**
      * Retrieves an inputstream from which the given file can be read
      * @param remote file to retrieve
      * @return inputstream
