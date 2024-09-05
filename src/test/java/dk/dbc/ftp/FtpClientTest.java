@@ -197,14 +197,11 @@ class FtpClientTest {
 
         ArrayList<InputStream> inputStreamList = new ArrayList<>();
         inputStreamList.add(ftpClient.get("put_file.txt"));
-        inputStreamList.add(ftpClient.get("put_another_file.txt"));
 
-        assertThat("inputstream 1 isn't null", inputStreamList.get(0),
-            is(notNullValue()));
-        assertThat("inputstream 2 isn't null", inputStreamList.get(1),
-            is(notNullValue()));
-        assertThat("read inputstream 1", readInputString(
-            inputStreamList.get(0)), is("testing put file"));
+        assertThat("inputstream 1 isn't null", inputStreamList.get(0), is(notNullValue()));
+        assertThat("read inputstream 1", readInputString(inputStreamList.get(0)), is("testing put file"));
+        inputStreamList.add(ftpClient.get("put_another_file.txt"));
+        assertThat("inputstream 2 isn't null", inputStreamList.get(1), is(notNullValue()));
         assertThat("read inputstream 2", readInputString(
             inputStreamList.get(1)), is(
             "\"I wumbo, you wumbo, he-she-me wumbo.\n" +
@@ -257,9 +254,9 @@ class FtpClientTest {
             .withPassword(PASSWORD)
             .cd(PUT_DIR);
         try {
-            ftpClient.get("does_not_exist.txt");
+            ftpClient.get("does_not_exist.txt").close();
             fail("expected ftpclient exception");
-        } catch(FtpClientException e) {}
+        } catch(IOException | FtpClientException e) {}
         finally {
             ftpClient.close();
         }
@@ -357,8 +354,7 @@ class FtpClientTest {
     }
 
     private static String readInputString(InputStream is) throws IOException {
-        try(final BufferedReader in = new BufferedReader(
-                new InputStreamReader(is))) {
+        try(final BufferedReader in = new BufferedReader(new InputStreamReader(is))) {
             StringBuilder sb = new StringBuilder();
             String line;
             while((line = in.readLine()) != null) {
