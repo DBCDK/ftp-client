@@ -281,8 +281,7 @@ public class FtpClient {
         }
         try {
             if(!session.setFileType(fileType.value)) {
-                throw new FtpClientException(String.format(
-                    "error setting file type to %s", fileType));
+                throw new FtpClientException(String.format("error setting file type to %s", fileType));
             }
             InputStream inputStream = session.retrieveFileStream(remote);
             if(inputStream == null) throw new FtpClientException(session.getReplyString());
