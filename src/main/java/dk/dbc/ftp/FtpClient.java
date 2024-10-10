@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This utility class provides convenience methods for executing FTP commands.
@@ -285,9 +286,11 @@ public class FtpClient {
             InputStream inputStream = session.retrieveFileStream(remote);
             if(inputStream == null) throw new FtpClientException(session.getReplyString());
             return new BufferedInputStream(inputStream) {
+                private final AtomicBoolean isOpen = new AtomicBoolean(true);
+
                 @Override
                 public void close() throws IOException {
-                    if(!session.completePendingCommand()) {
+                    if(isOpen.getAndSet(false) && !session.completePendingCommand()) {
                         throw new FtpClientException(session.getReplyString());
                     }
                     super.close();
