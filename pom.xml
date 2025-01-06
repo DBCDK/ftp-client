@@ -9,6 +9,7 @@
   <artifactId>ftp-client</artifactId>
   <version>2.2-SNAPSHOT</version>
   <name>ftp-client</name>
+  <packaging>jar</packaging>
 
   <parent>
     <groupId>dk.dbc</groupId>

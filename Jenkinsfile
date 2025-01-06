@@ -6,7 +6,6 @@ pipeline {
     agent {label workerNode}
 
     tools {
-        jdk 'jdk11'
         maven 'Maven 3'
     }
 
