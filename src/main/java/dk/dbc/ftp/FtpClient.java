@@ -6,8 +6,8 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPFileFilter;
 import org.apache.commons.net.ftp.FTPReply;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Proxy;
@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This utility class provides convenience methods for executing FTP commands.
@@ -280,16 +281,21 @@ public class FtpClient {
         }
         try {
             if(!session.setFileType(fileType.value)) {
-                throw new FtpClientException(String.format(
-                    "error setting file type to %s", fileType));
+                throw new FtpClientException(String.format("error setting file type to %s", fileType));
             }
-            final ByteArrayOutputStream outputStream =
-                new ByteArrayOutputStream();
-            session.retrieveFile(remote, outputStream);
-            if(!FTPReply.isPositiveCompletion(session.getReplyCode())) {
-                throw new FtpClientException(session.getReplyString());
-            }
-            return new ByteArrayInputStream(outputStream.toByteArray());
+            InputStream inputStream = session.retrieveFileStream(remote);
+            if(inputStream == null) throw new FtpClientException(session.getReplyString());
+            return new BufferedInputStream(inputStream) {
+                private final AtomicBoolean isOpen = new AtomicBoolean(true);
+
+                @Override
+                public void close() throws IOException {
+                    if(isOpen.getAndSet(false) && !session.completePendingCommand()) {
+                        throw new FtpClientException(session.getReplyString());
+                    }
+                    super.close();
+                }
+            };
         } catch(IOException e) {
             throw new FtpClientException(e);
         }
