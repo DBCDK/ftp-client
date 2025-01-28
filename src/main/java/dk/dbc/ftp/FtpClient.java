@@ -133,13 +133,16 @@ public class FtpClient {
         return this;
     }
 
+    /**
+     * Returns the working directory. If directories are not supported an empty string is returned
+     */
     public String pwd() {
         try {
             String workingDirectory = session.printWorkingDirectory();
             checkReplyCode();
             return workingDirectory;
         } catch (IOException e) {
-            throw new FtpClientException(e);
+            return "";
         }
     }
 
