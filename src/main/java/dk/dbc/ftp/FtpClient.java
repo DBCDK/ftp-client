@@ -133,6 +133,16 @@ public class FtpClient {
         return this;
     }
 
+    public String pwd() {
+        try {
+            String workingDirectory = session.printWorkingDirectory();
+            checkReplyCode();
+            return workingDirectory;
+        } catch (IOException e) {
+            throw new FtpClientException(e);
+        }
+    }
+
     /**
      * Stores content of string {@code content} as file on the server
      * using name {@code remote}
