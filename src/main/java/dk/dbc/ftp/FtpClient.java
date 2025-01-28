@@ -141,7 +141,7 @@ public class FtpClient {
             String workingDirectory = session.printWorkingDirectory();
             checkReplyCode();
             return workingDirectory;
-        } catch (IOException e) {
+        } catch (Exception e) {
             return "";
         }
     }
